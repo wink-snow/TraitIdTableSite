@@ -1,0 +1,97 @@
+@page "/traits"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using TraitBrowser.Models
+@using TraitBrowserWebApp.Models
+@using TraitBrowserWebApp.Data
+@using TraitBrowserWebApp.Components.Account
+@implements IAsyncDisposable
+@inject IDbContextFactory<TraitBrowserWebApp.Data.TraitBrowserContext> TraitDbFactory
+@inject IDbContextFactory<TraitBrowserWebApp.Data.LocBuffContext> LocBuffDbFactory
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Trait</PageTitle>
+
+<h1>Trait List</h1>
+
+<div>
+    <input type="search" placeholder="Search by name" @bind="nameFilter" @bind:event="oninput" />
+</div>
+
+<p>
+    <a href="traits/create">Create New</a>
+</p>
+
+<div>
+<QuickGrid Class="table" Items="FilteredTraits" Pagination="pagination" >
+    <PropertyColumn Property="trait => trait.TraitId" Sortable="true" Title="ID" />
+    <PropertyColumn Property="trait => trait.Name == null ? trait.Name : LocalizedTrait(trait.Name, TraitSortColumn.Name)" Title="Name" />
+    <PropertyColumn Property="trait => trait.Genre" Title="Genre" />
+    <PropertyColumn Property="trait => trait.Name == null ? trait.Name : LocalizedTrait(trait.Name, TraitSortColumn.Description)" Title="Description" />
+
+    <TemplateColumn Context="trait">
+        <a href="@($"traits/edit?id={trait.Id}")">Edit</a> |
+        <a href="@($"traits/details?id={trait.Id}")">Details</a> |
+        <a href="@($"traits/delete?id={trait.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+</div>
+
+<Paginator State="pagination" />
+
+@code { 
+    private LocBuffContext locBuffContext = default!;
+    private TraitBrowserContext traitContext = default!;
+    private IQueryable<LocBuff> localizedTrait = default!;
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 8 };
+    private string nameFilter = string.Empty;
+    private HttpContext httpContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        traitContext = TraitDbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await traitContext.DisposeAsync();
+    }
+
+    private IQueryable<Trait> FilteredTraits => 
+        traitContext.Trait.Where(m => m.Name!.Contains(nameFilter))
+                    .OrderBy(m => m.TraitId);
+    
+    private string LocalizedTrait(string traitName, TraitSortColumn sortColumn)
+    {
+        using (locBuffContext = LocBuffDbFactory.CreateDbContext())
+        {   
+            if (sortColumn == TraitSortColumn.Name)
+            {
+                localizedTrait = locBuffContext.LocBuff.Where(p => p.Name == $"BuffName_{traitName}");
+            }
+            else if (sortColumn == TraitSortColumn.Description)
+            {
+                localizedTrait = locBuffContext.LocBuff.Where(p => p.Name == $"BuffInfo_{traitName}");
+            }
+            if (localizedTrait.Any())
+            {
+                return localizedTrait.First().SChinese ?? traitName;
+            }
+
+            if (sortColumn == TraitSortColumn.Name)
+            {
+                return traitName;
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+    }
+    
+    private async Task DisplayAuthError()
+    {
+        await JS.InvokeVoidAsync("displayTickerAuthError");
+    }
+}         

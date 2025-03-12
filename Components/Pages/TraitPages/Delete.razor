@@ -1,0 +1,69 @@
+@page "/traits/delete"
+@using Microsoft.EntityFrameworkCore
+@using TraitBrowser.Models
+@inject IDbContextFactory<TraitBrowserWebApp.Data.TraitBrowserContext> DbFactory
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize (Roles = "Admin")]
+
+<PageTitle>Delete</PageTitle>
+
+<h1>Delete</h1>
+
+<p>Are you sure you want to delete this?</p>
+<div>
+    <h2>Trait</h2>
+    <hr />
+    @if (trait is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">TraitId</dt>
+            <dd class="col-sm-10">@trait.TraitId</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Name</dt>
+            <dd class="col-sm-10">@trait.Name</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Genre</dt>
+            <dd class="col-sm-10">@trait.Genre</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Description</dt>
+            <dd class="col-sm-10">@trait.Description</dd>
+        </dl>
+        <EditForm method="post" Model="trait" OnValidSubmit="DeleteTrait" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(trait is null)">Delete</button> |
+            <a href="/traits">Back to List</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Trait? trait;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        trait = await context.Trait.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (trait is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task DeleteTrait()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Trait.Remove(trait!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/traits");
+    }
+}

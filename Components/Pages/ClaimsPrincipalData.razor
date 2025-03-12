@@ -1,0 +1,33 @@
+@page "/claims-principal-data"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using TraitBrowserWebApp.Data
+@using TraitBrowserWebApp.Components.Account
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityUserAccessor UserAccessor
+
+<h1>ClaimsPrincipal Data</h1>
+
+<button @onclick="GetClaimsPrincipalData">Get ClaimsPrincipal Data</button>
+
+<p>@authMessage</p>
+
+@code {
+    private string? authMessage;
+    private HttpContext HttpContext { get; set; } = default!;
+    private async Task GetClaimsPrincipalData()
+    {
+        var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var isEmailConfirmed = await UserManager.IsEmailConfirmedAsync(user);
+
+        if (isEmailConfirmed)
+        {
+            authMessage = "Email is confirmed";
+        }
+        else
+        {
+            authMessage = "Email is not confirmed";
+        }
+    }
+}    

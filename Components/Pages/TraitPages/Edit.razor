@@ -1,0 +1,106 @@
+@page "/traits/edit"
+@using Microsoft.EntityFrameworkCore
+@using TraitBrowser.Models
+@inject IDbContextFactory<TraitBrowserWebApp.Data.TraitBrowserContext> DbFactory
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize (Roles = "Admin")]
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>Trait</h2>
+<hr />
+@if (Trait is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Trait" OnValidSubmit="UpdateTrait" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="Trait.Id" value="@Trait.Id" />
+                <div class="mb-3">
+                    <label for="traitid" class="form-label">TraitId:</label>
+                    <InputNumber id="traitid" @bind-Value="Trait.TraitId" class="form-control" />
+                    <ValidationMessage For="() => Trait.TraitId" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="Trait.Name" class="form-control" />
+                    <ValidationMessage For="() => Trait.Name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="genre" class="form-label">Genre:</label>
+                    <InputText id="genre" @bind-Value="Trait.Genre" class="form-control" />
+                    <ValidationMessage For="() => Trait.Genre" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <InputText id="description" @bind-Value="Trait.Description" class="form-control" />
+                    <ValidationMessage For="() => Trait.Description" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/traits">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Trait? Trait { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Trait ??= await context.Trait.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Trait is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateTrait()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(Trait!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!TraitExists(Trait!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/traits");
+    }
+
+    private bool TraitExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Trait.Any(e => e.Id == id);
+    }
+}
