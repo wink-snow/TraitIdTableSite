@@ -31,6 +31,12 @@
 
 <Paginator State="pagination" />
 
+<div class="st-footer">
+    <div class="st-footer-content">
+        <p><a href="https://beian.miit.gov.cn/" target="_blank">陕ICP备2024041464号-1</a></p>
+    </div>
+</div>
+
 @code { 
     private LocBuffContext locBuffContext = default!;
     private TraitBrowserContext traitContext = default!;
@@ -50,13 +56,9 @@
     }
 
     private IQueryable<Trait> FilteredTraits => 
-        traitContext.Trait.Where(m => m.Name!.Contains(nameFilter))
-                    .OrderBy(m => m.TraitId);
+        (traitContext.Trait.Where(m => m.Name!.Contains(nameFilter))
+                    .OrderBy(m => m.TraitId));
 
-    private IQueryable<LocBuff> FilteredLocBuff =>
-        locBuffContext.LocBuff.Where(locBuff => locBuff.SChinese!.Contains(nameFilter))
-                      .Where(locBuff => locBuff.Name!.Contains("BuffName"));
-    
     private string ExtractTraitName(string input, string prefix)
     {
         var match = Regex.Match(input, $@"^{prefix}_(.+)$");
@@ -75,19 +77,18 @@
             {
                 localizedTrait = locBuffContext.LocBuff.Where(p => p.Name == $"BuffInfo_{traitName}");
             }
+
             if (localizedTrait.Any())
             {
                 return localizedTrait.First().SChinese ?? traitName;
             }
-
+            
             if (sortColumn == TraitSortColumn.Name)
             {
                 return traitName;
             }
-            else
-            {
-                return string.Empty;
-            }
+
+            return string.Empty;
         }
     }
     

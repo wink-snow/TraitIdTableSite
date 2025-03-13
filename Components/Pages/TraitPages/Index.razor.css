@@ -5,3 +5,14 @@
     ::deep tr > td {
         vertical-align: middle;
     }
+
+    .st-footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 50px;
+        background-color: white;
+    }
+    .st-footer-content {
+        font-size: 12px;
+    }
