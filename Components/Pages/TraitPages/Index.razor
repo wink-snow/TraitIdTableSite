@@ -52,26 +52,15 @@
     private IQueryable<Trait> FilteredTraits => 
         traitContext.Trait.Where(m => m.Name!.Contains(nameFilter))
                     .OrderBy(m => m.TraitId);
+
+    private IQueryable<LocBuff> FilteredLocBuff =>
+        locBuffContext.LocBuff.Where(locBuff => locBuff.SChinese!.Contains(nameFilter))
+                      .Where(locBuff => locBuff.Name!.Contains("BuffName"));
     
     private string ExtractTraitName(string input, string prefix)
     {
         var match = Regex.Match(input, $@"^{prefix}_(.+)$");
         return match.Success ? match.Groups[1].Value : input;
-    }
-    
-    private string RestoredTrait()
-    {
-        using (locBuffContext = LocBuffDbFactory.CreateDbContext())
-        {
-            var restoredTrait = locBuffContext.LocBuff.Where(p => p.SChinese!.Contains(nameFilter))
-                                              .Where(p => p.Name!.Contains("BuffName"));
-            if (restoredTrait.Any())
-            {
-                var restoredName = restoredTrait.First().Name ?? nameFilter;
-                return ExtractTraitName(restoredName, "BuffName");
-            }
-        }
-        return nameFilter;
     }
     
     private string LocalizedTrait(string traitName, TraitSortColumn sortColumn)
