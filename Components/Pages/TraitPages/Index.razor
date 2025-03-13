@@ -1,10 +1,11 @@
-@page "/traits"
+@page "/"
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using TraitBrowser.Models
 @using TraitBrowserWebApp.Models
 @using TraitBrowserWebApp.Data
 @using TraitBrowserWebApp.Components.Account
+@using System.Text.RegularExpressions
 @implements IAsyncDisposable
 @inject IDbContextFactory<TraitBrowserWebApp.Data.TraitBrowserContext> TraitDbFactory
 @inject IDbContextFactory<TraitBrowserWebApp.Data.LocBuffContext> LocBuffDbFactory
@@ -19,22 +20,12 @@
     <input type="search" placeholder="Search by name" @bind="nameFilter" @bind:event="oninput" />
 </div>
 
-<p>
-    <a href="traits/create">Create New</a>
-</p>
-
 <div>
 <QuickGrid Class="table" Items="FilteredTraits" Pagination="pagination" >
     <PropertyColumn Property="trait => trait.TraitId" Sortable="true" Title="ID" />
     <PropertyColumn Property="trait => trait.Name == null ? trait.Name : LocalizedTrait(trait.Name, TraitSortColumn.Name)" Title="Name" />
     <PropertyColumn Property="trait => trait.Genre" Title="Genre" />
     <PropertyColumn Property="trait => trait.Name == null ? trait.Name : LocalizedTrait(trait.Name, TraitSortColumn.Description)" Title="Description" />
-
-    <TemplateColumn Context="trait">
-        <a href="@($"traits/edit?id={trait.Id}")">Edit</a> |
-        <a href="@($"traits/details?id={trait.Id}")">Details</a> |
-        <a href="@($"traits/delete?id={trait.Id}")">Delete</a>
-    </TemplateColumn>
 </QuickGrid>
 </div>
 
@@ -61,6 +52,27 @@
     private IQueryable<Trait> FilteredTraits => 
         traitContext.Trait.Where(m => m.Name!.Contains(nameFilter))
                     .OrderBy(m => m.TraitId);
+    
+    private string ExtractTraitName(string input, string prefix)
+    {
+        var match = Regex.Match(input, $@"^{prefix}_(.+)$");
+        return match.Success ? match.Groups[1].Value : input;
+    }
+    
+    private string RestoredTrait()
+    {
+        using (locBuffContext = LocBuffDbFactory.CreateDbContext())
+        {
+            var restoredTrait = locBuffContext.LocBuff.Where(p => p.SChinese!.Contains(nameFilter))
+                                              .Where(p => p.Name!.Contains("BuffName"));
+            if (restoredTrait.Any())
+            {
+                var restoredName = restoredTrait.First().Name ?? nameFilter;
+                return ExtractTraitName(restoredName, "BuffName");
+            }
+        }
+        return nameFilter;
+    }
     
     private string LocalizedTrait(string traitName, TraitSortColumn sortColumn)
     {
@@ -94,4 +106,4 @@
     {
         await JS.InvokeVoidAsync("displayTickerAuthError");
     }
-}         
+}             
